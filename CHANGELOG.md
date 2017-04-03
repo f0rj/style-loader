@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.16.2"></a>
+## [0.16.2](https://github.com/f0rj/style-loader/compare/v0.16.1...v0.16.2) (2017-04-03)
+
+
+
 <a name="0.16.1"></a>
 ## [0.16.1](https://github.com/webpack/style-loader/compare/v0.16.0...v0.16.1) (2017-03-28)
 

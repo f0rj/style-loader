@@ -26,8 +26,8 @@ var stylesInDom = {},
 			}
 			return memo[selector]
 		};
-	})(function (styleTarget) {
-		return document.querySelector(styleTarget)
+	})(function (styleTarget, iframe) {
+		return ((iframe && document.getElementById(iframe) && document.getElementById(iframe).contentDocument) || document).querySelector(styleTarget)
 	}),
 	singletonElement = null,
 	singletonCounter = 0,
@@ -119,7 +119,7 @@ function listToStyles(list) {
 }
 
 function insertStyleElement(options, styleElement) {
-	var styleTarget = getElement(options.insertInto)
+	var styleTarget = getElement(options.insertInto, options.iframe);
 	if (!styleTarget) {
 		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
 	}
