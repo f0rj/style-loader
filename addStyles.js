@@ -149,7 +149,7 @@ function removeStyleElement(styleElement) {
 }
 
 function createStyleElement(options) {
-	var styleElement = document.createElement("style");
+	var styleElement = ((options.iframe && document.getElementById(options.iframe) && document.getElementById(options.iframe).contentDocument) || document).createElement("style");
 	options.attrs.type = "text/css";
 
 	attachTagAttrs(styleElement, options.attrs);
@@ -158,7 +158,7 @@ function createStyleElement(options) {
 }
 
 function createLinkElement(options) {
-	var linkElement = document.createElement("link");
+	var linkElement = ((options.iframe && document.getElementById(options.iframe) && document.getElementById(options.iframe).contentDocument) || document).createElement("link");
 	options.attrs.type = "text/css";
 	options.attrs.rel = "stylesheet";
 
