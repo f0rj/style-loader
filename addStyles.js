@@ -18,17 +18,35 @@ var stylesInDom = {},
 		// @see https://github.com/webpack-contrib/style-loader/issues/177
 		return window && document && document.all && !window.atob;
 	}),
+
 	getElement = (function(fn) {
 		var memo = {};
-		return function(selector) {
+		return function(selector, iframe, callback) {
 			if (typeof memo[selector] === "undefined") {
-				memo[selector] = fn.call(this, selector);
+				if (iframe) {
+					var content = iframe && document.getElementById(iframe);
+					if (content) {
+            var load = content && content.onload;
+            var self = this;
+            content.onload = function() {
+              callback(memo[selector] = fn.call(self, selector, content.contentDocument));
+              load && load();
+						};
+					} else {
+            // callback(memo[selector] = fn.call(this, selector));
+					}
+				} else {
+          callback(memo[selector] = fn.call(this, selector));
+        }
 			}
 			return memo[selector]
 		};
-	})(function (styleTarget, iframe) {
-		return ((iframe && document.getElementById(iframe) && document.getElementById(iframe).contentDocument) || document).querySelector(styleTarget)
+	})(function (styleTarget, doc) {
+		return (doc || document).querySelector(styleTarget)
 	}),
+	getDocument = function(options) {
+    return ((options.iframe && document.getElementById(options.iframe) && document.getElementById(options.iframe).contentDocument) || document);
+	},
 	singletonElement = null,
 	singletonCounter = 0,
 	styleElementsInsertedAtTop = [],
@@ -119,25 +137,37 @@ function listToStyles(list) {
 }
 
 function insertStyleElement(options, styleElement) {
-	var styleTarget = getElement(options.insertInto, options.iframe);
-	if (!styleTarget) {
-		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
-	}
-	var lastStyleElementInsertedAtTop = styleElementsInsertedAtTop[styleElementsInsertedAtTop.length - 1];
-	if (options.insertAt === "top") {
-		if(!lastStyleElementInsertedAtTop) {
-			styleTarget.insertBefore(styleElement, styleTarget.firstChild);
-		} else if(lastStyleElementInsertedAtTop.nextSibling) {
-			styleTarget.insertBefore(styleElement, lastStyleElementInsertedAtTop.nextSibling);
-		} else {
-			styleTarget.appendChild(styleElement);
+	if (options.var) {
+		var namespaces = options.var.split('.');
+		var level = 0;
+		var property = namespaces.length - 1;
+		var obj = window;
+		while (level < property) {
+			obj = obj[namespaces[level++]];
 		}
-		styleElementsInsertedAtTop.push(styleElement);
-	} else if (options.insertAt === "bottom") {
-		styleTarget.appendChild(styleElement);
+		obj[namespaces[property]] = (obj[namespaces[property]] || []).concat(styleElement);
 	} else {
-		throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
-	}
+    getElement(options.insertInto, options.iframe, function (styleTarget) {
+      if (!styleTarget) {
+        throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+      }
+      var lastStyleElementInsertedAtTop = styleElementsInsertedAtTop[styleElementsInsertedAtTop.length - 1];
+      if (options.insertAt === "top") {
+        if (!lastStyleElementInsertedAtTop) {
+          styleTarget.insertBefore(styleElement, styleTarget.firstChild);
+        } else if (lastStyleElementInsertedAtTop.nextSibling) {
+          styleTarget.insertBefore(styleElement, lastStyleElementInsertedAtTop.nextSibling);
+        } else {
+          styleTarget.appendChild(styleElement);
+        }
+        styleElementsInsertedAtTop.push(styleElement);
+      } else if (options.insertAt === "bottom") {
+        styleTarget.appendChild(styleElement);
+      } else {
+        throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
+      }
+    });
+  }
 }
 
 function removeStyleElement(styleElement) {
@@ -149,7 +179,7 @@ function removeStyleElement(styleElement) {
 }
 
 function createStyleElement(options) {
-	var styleElement = ((options.iframe && document.getElementById(options.iframe) && document.getElementById(options.iframe).contentDocument) || document).createElement("style");
+	var styleElement = getDocument(options).createElement("style");
 	options.attrs.type = "text/css";
 
 	attachTagAttrs(styleElement, options.attrs);
@@ -158,7 +188,7 @@ function createStyleElement(options) {
 }
 
 function createLinkElement(options) {
-	var linkElement = ((options.iframe && document.getElementById(options.iframe) && document.getElementById(options.iframe).contentDocument) || document).createElement("link");
+	var linkElement = getDocument(options).createElement("link");
 	options.attrs.type = "text/css";
 	options.attrs.rel = "stylesheet";
 
