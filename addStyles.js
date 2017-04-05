@@ -24,16 +24,38 @@ var stylesInDom = {},
 		return function(selector, iframe, callback) {
 			if (typeof memo[selector] === "undefined") {
 				if (iframe) {
+          var self = this;
           document.addEventListener("DOMContentLoaded", function(event) {
             var content = iframe && document.getElementById(iframe);
             if (content) {
               var load = content && content.onload;
-              var self = this;
               content.onload = function() {
                 callback(memo[selector] = fn.call(self, selector, content.contentDocument));
                 load && load();
               };
-            }
+            } else {
+              var observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                  if (!mutation.addedNodes) return
+
+                  content = iframe && document.getElementById(iframe);
+                  if (content) {
+                    var load = content && content.onload;
+                    content.onload = function() {
+                      callback(memo[selector] = fn.call(self, selector, content.contentDocument));
+                      load && load();
+                    };
+                    observer.disconnect();
+                  }
+                })
+              });
+              observer.observe(document.body, {
+                childList: true
+                , subtree: true
+                , attributes: false
+                , characterData: false
+              });
+						}
           });
 				} else {
           callback(memo[selector] = fn.call(this, selector));
