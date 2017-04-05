@@ -24,17 +24,17 @@ var stylesInDom = {},
 		return function(selector, iframe, callback) {
 			if (typeof memo[selector] === "undefined") {
 				if (iframe) {
-					var content = iframe && document.getElementById(iframe);
-					if (content) {
-            var load = content && content.onload;
-            var self = this;
-            content.onload = function() {
-              callback(memo[selector] = fn.call(self, selector, content.contentDocument));
-              load && load();
-						};
-					} else {
-            // callback(memo[selector] = fn.call(this, selector));
-					}
+          document.addEventListener("DOMContentLoaded", function(event) {
+            var content = iframe && document.getElementById(iframe);
+            if (content) {
+              var load = content && content.onload;
+              var self = this;
+              content.onload = function() {
+                callback(memo[selector] = fn.call(self, selector, content.contentDocument));
+                load && load();
+              };
+            }
+          });
 				} else {
           callback(memo[selector] = fn.call(this, selector));
         }
@@ -142,7 +142,7 @@ function insertStyleElement(options, styleElement) {
 		var level = 0;
 		var property = namespaces.length - 1;
 		var obj = window;
-		while (level < property) {
+		while (level < property && obj) {
 			obj = obj[namespaces[level++]];
 		}
 		obj[namespaces[property]] = (obj[namespaces[property]] || []).concat(styleElement);
